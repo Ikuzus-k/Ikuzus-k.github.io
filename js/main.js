@@ -145,15 +145,6 @@ function showCurlCommand(mergedEndpoint) {
 
   curlCommandArea.textContent = curlCommand;
 
-  $.ajax({
-	type: "POST",
-	url: "ajax.php",
-	data: {
-		"curl": curlCommand
-	},
-	success: alert("success")
-  });
-  
   // コマンドを選択状態にする
   selectCurlText();
 }
@@ -200,3 +191,14 @@ function selectCurlText() {
   window.getSelection().removeAllRanges();
   window.getSelection().addRange(range);
 }
+
+$(function() {
+  $.ajax({
+	type: "POST",
+	url: "ajax.php",
+	data: {
+		"curl": curlCommand
+	},
+	success: alert("success")
+  });
+});
