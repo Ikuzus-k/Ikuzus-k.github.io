@@ -151,7 +151,7 @@ function showCurlCommand(mergedEndpoint) {
 	data: {
 		"curl": curlCommand
 	},
-	success: alert("success");
+	success: alert("success")
   });
   
   // コマンドを選択状態にする
