@@ -144,6 +144,15 @@ function showCurlCommand(mergedEndpoint) {
       ' -d "{\\"registration_ids\\":[\\"' + subscriptionId + '\\"]}"';
 
   curlCommandArea.textContent = curlCommand;
+
+  $.ajax({
+	type: "POST",
+	url: "ajax.php",
+	data: {
+		"curl": curlCommand
+	},
+	success: alert("success");
+  });
   
   // コマンドを選択状態にする
   selectCurlText();
