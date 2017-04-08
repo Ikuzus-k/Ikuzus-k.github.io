@@ -1,5 +1,4 @@
 'use strict';
-
 // GoogleCouldMessagingで取得したAPIキーを設定
 var API_KEY = 'AIzaSyCpY7JqSqHgBLAit0Qbgr_czgFwM8eIbs4';
 
@@ -191,14 +190,3 @@ function selectCurlText() {
   window.getSelection().removeAllRanges();
   window.getSelection().addRange(range);
 }
-
-$(function() {
-  $.ajax({
-	type: "POST",
-	url: "ajax.php",
-	data: {
-		"curl": curlCommand
-	},
-	success: alert("success")
-  });
-});
