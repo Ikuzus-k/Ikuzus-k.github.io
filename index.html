@@ -1,56 +1,160 @@
-<!doctype html>
-<html lang="ja">
+<!DOCTYPE HTML>
+<html>
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>プッシュ通知のサンプル</title>
-    <meta name="mobile-web-app-capable" content="yes">
-    <!-- Include manifest file in the page -->
-    <link rel="manifest" href="js/manifest.json">
-    <link rel="stylesheet" href="css/style.css" >
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="js/main.js" defer></script>
-  </head>
+    <title>Speech to TextをIoTで活用してみる</title>
+      <meta charset="utf-8" />
+<script src="recorder.js"></script>
+<script type="text/javascript">
 
-  <body>
-    <div class="supported">
-      <div>
-        <h2>プッシュ通知の配信設定</h2>
-        <p>下記のトグルを選択してください。</p>
-        <form action="">
-          <input class='tgl tgl-light' id='pushEnableButton' type='button'>
-          <label class='tgl-btn' for='pushEnableButton'></label>
-        </form>
-      </div>
+function __log(e, data) {
+  log.innerHTML = e + " " + (data || '') + '\n';
+}
 
-      <h2>cURLコマンド</h2>
-      <p>下記のコマンドをコピーして、Terminalより実行してください。</p>
-      <div id="curlCommand"></div>
-      <input type="button" id="btn"i value="登録">
-      <h2></h2>
-      <p>
-        <a href="chrome://serviceworker-internals" target="_blank">chrome://serviceworker-internals</a>
-      </p>
-    </div>
+var audio_context;
+var recorder;
 
-    <div class="unsupported">
-      <p>お使いのブラウザは、プッシュ通知に対応していません。<br>
-      最新版のChromeでご利用ください。</p>
+function startUserMedia(stream)
+{
+  var input = audio_context.createMediaStreamSource(stream);
+    __log('Media stream created.');
+    console.log('Media stream created.');
 
-    </div>
+  recorder = new Recorder(input);
+    __log('Recorder initialised.');
+    console.log('Recorder initialised.');
+}
 
-<script>
-$("#btn").click(function(){
- 
-        $.ajax({
-            type: "POST",
-            url: "./php/ajax.php",
-            data: {
-                "curl": $("#curlCommand").val()
-            },
-            success: alert("scuccess")
-    });
-});
+function startRecording(button)
+{
+  recorder && recorder.record();
+  button.disabled = true;
+  button.nextElementSibling.disabled = false;
+    __log('Recording...');
+    console.log('Recording...');
+}
+
+function stopRecording(button)
+{
+  recorder && recorder.stop();
+  button.disabled = true;
+  button.previousElementSibling.disabled = false;
+  __log('Stopped recording.');
+  console.log('Stopped recording.');
+
+  createDownloadLink();
+  recorder.clear();
+}
+
+function createDownloadLink()
+{
+  recorder && recorder.exportWAV(function(blob) {
+    var url = URL.createObjectURL(blob);
+    var li = document.createElement('li');
+    var au = document.createElement('audio');
+    var hf = document.createElement('a');
+
+    au.controls = true;
+    au.src = url;
+    hf.href = url;
+    hf.download = new Date().toISOString() + '.wav';
+    hf.innerHTML = hf.download;
+    socketFunc(blob);
+    li.appendChild(au);
+    li.appendChild(hf);
+    recordingslist.appendChild(li);
+  });
+}
+
+window.onload = function init()
+{
+  try
+  {
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+    window.URL = window.URL || window.webkitURL;
+
+    audio_context = new AudioContext;
+     __log('Audio context set up.');
+     console.log('Audio context set up.');
+     __log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+     console.log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+  }
+  catch (e)
+  {
+    alert('No web audio support in this browser!');
+  }
+
+  navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
+      __log('No live audio input: ' + e);
+      console.log('No live audio input: ' + e);
+  });
+};
+
+
+
+
+function socketFunc(blob) {
+  socket = new WebSocket('ws://nodered-stt.mybluemix.net/ws/example');
+  socket.binaryType = 'arraybuffer';
+  socket.onopen = function () {
+	  //console.log("blob = " + blob);
+    socket.send(blob);
+  }
+  socket.onerror = function (error) {
+    __log('WebSocket Error ' + error);
+    console.log('WebSocket Error ' + error);
+  };
+  socket.onmessage = function (e) {
+    __log('Server: ' + e.data);
+    console.log('Server: ' + e.data);
+    socket.onclose = function () {
+      socket.close();
+    }
+  };
+};
+
 </script>
-  </body>
+</head>
+
+<body>
+
+<div id="b-box" style="background-color: #98fb98; padding: 20px; ">
+<h2>WAVファイル作成</h2>
+</div>
+
+<div id="b-box" style="background-color: #ecf2fe; padding: 20px; ">
+<p>
+  <button onclick="startRecording(this);">録音</button>
+  <button onclick="stopRecording(this);" disabled>停止</button>
+</p>
+</div>
+
+<div id="b-box" style="background-color: #f5f5dc; padding: 20px; ">
+<h3>録音ファイル</h3>
+<ul id="recordingslist"></ul>
+
+<h3>ステータス</h3>
+<pre id="log"></pre>
+</div>
+<div id="c-box" style="background-color: #f0e8fa; padding: 20px; ">
+		<ul>
+			<li><a href="http://qiita.com/egplnt/items/af867711a7191923b2ff">Watson IoT Platformを使ってみる</a></li>
+			<li><a href="https://internetofthings.ibmcloud.com/#/">Watson IoT Platform</a></li>
+			<li><a href="https://developer.ibm.com/recipes/tutorials/use-the-simulated-device-to-experience-the-iot-foundation/">Recipe - Simulator</a></li>
+		</ul>
+		<div class="category">資料ページ</div>
+		<ul>
+			<li><a href="http://ibm.com/iot">IBM IoT</a></li>
+			<li><a href="https://docs.internetofthings.ibmcloud.com/ja/">Watson IoT Platform資料ページ</a></li>
+			<li><a href="https://developer.ibm.com/recipes/">Recipe</a></li>
+		</ul>
+
+
+
+</div>
+<div id="d-box" style="clear: both; background-color: #e0ce96; font-size: 18px; padding: 10px; text-align: center;  padding: 20px;">
+	copyright (c) abc.com All right reserved..
+</div>
+
+</body>
 </html>
